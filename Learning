@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emilia's Math and Spelling App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f8ff;
+            text-align: center;
+        }
+        #flashcard {
+            font-size: 2em;
+            margin-top: 50px;
+            transition: transform 0.3s ease;
+        }
+        #flashcard.correct {
+            animation: bounce 0.5s;
+            color: green;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        #inputBox {
+            font-size: 1.5em;
+            padding: 10px;
+            margin: 20px;
+            border: 2px solid #ccc;
+        }
+        #score {
+            font-size: 1.5em;
+            margin-top: 30px;
+        }
+        #rewardSection {
+            margin-top: 50px;
+            font-size: 1.2em;
+        }
+        .reward {
+            margin: 10px;
+            padding: 10px;
+            background-color: #d3f8e2;
+            border: 1px solid #b2f2b2;
+            display: inline-block;
+        }
+        .timer-options, .category-options {
+            margin: 20px;
+        }
+        #feedback {
+            font-size: 1.5em;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Emilia's Math and Spelling App</h1>
+
+    <div class="category-options">
+        <label for="categorySelect">Choose a category:</label>
+        <select id="categorySelect" onchange="resetCategory()">
+            <option value="fruits">Fruits</option>
+            <option value="vehicles">Vehicles</option>
+            <option value="animals">Animals</option>
+            <option value="clothing">Clothing</option>
+            <option value="furniture">Furniture</option>
+            <option value="nature">Nature</option>
+            <option value="emotions">Emotions</option>
+            <option value="actions">Actions</option>
+            <option value="colors">Colors</option>
+            <option value="adjectives">Adjectives</option>
+            <option value="math">Math</option>
+            <option value="spanish">Spanish</option>
+        </select>
+    </div>
+
+    <div class="timer-options">
+        <label for="timerSelect">Choose how long to view the word:</label>
+        <select id="timerSelect">
+            <option value="3000">3 Seconds</option>
+            <option value="5000">5 Seconds</option>
+            <option value="10000">10 Seconds</option>
+        </select>
+    </div>
+
+    <div id="flashcard">Loading...</div>
+    <input type="text" id="inputBox" placeholder="Type the answer here" onkeydown="checkEnter(event)">
+
+    <div id="score">Points: 0</div>
+    <div id="feedback"></div>
+
+    <div id="rewardSection">
+        <h2>Available Rewards</h2>
+        <div class="reward">Mystery Box (100 points) <span id="reward1Status">Locked</span></div>
+        <div class="reward">Toy (200 points) <span id="reward2Status">Locked</span></div>
+        <div class="reward">iPad Upgrade (5000 points) <span id="reward3Status">Locked</span></div>
+        <div class="reward">Trip to Zoo (750 points) <span id="reward4Status">Locked</span></div>
+        <div class="reward">Pizza Party (1000 points) <span id="reward5Status">Locked</span></div>
+    </div>
+
+    <audio id="correctSound" src="https://www.soundjay.com/buttons/sounds/button-4.mp3"></audio>
+
+    <script>
+        const wordCategories = {
+            fruits: ["apple", "banana", "cherry", "grape", "orange"],
+            vehicles: ["car", "truck", "plane", "train", "boat"],
+            animals: ["cat", "dog", "rabbit", "hamster", "mouse"],
+            clothing: ["hat", "shirt", "pants", "shoes", "socks"],
+            furniture: ["table", "chair", "bed", "sofa", "desk"],
+            nature: ["sun", "moon", "star", "cloud", "rain"],
+            emotions: ["smile", "laugh", "cry", "yawn", "frown"],
+            actions: ["run", "walk", "jump", "hop", "skip"],
+            colors: ["red", "blue", "green", "yellow", "orange"],
+            adjectives: ["big", "small", "tall", "short", "fast"],
+            spanish: ["manzana", "plátano", "cereza", "uva", "naranja"],
+            math: []
+        };
+
+        for (let i = 1; i <= 12; i++) {
+            for (let j = 1; j <= 12; j++) {
+                wordCategories.math.push(`${i} x ${j}`);
+                wordCategories.math.push(`${i} + ${j}`);
+                if (i + j <= 20) wordCategories.math.push(`${i + j} - ${i}`);
+            }
+        }
+
+        let words = [];
+        let currentIndex = 0;
+        let score = 0;
+        let timer = null;
+        let retryQueue = [];
+        let deferredQueue = [];
+        let retries = {};
+
+        function resetCategory() {
+            const selectedCategory = document.getElementById("categorySelect").value;
+            words = [...wordCategories[selectedCategory]];
+            currentIndex = 0;
+            score = 0;
+            retryQueue = [];
+            deferredQueue = [];
+            retries = {};
+            document.getElementById("score").innerText = "Points: 0";
+            document.getElementById("feedback").innerText = "";
+            document.getElementById("inputBox").value = '';
+            showFlashcard();
+        }
+
+        function showFlashcard() {
+            clearTimeout(timer);
+            let word = getNextWord();
+            document.getElementById("flashcard").innerText = word;
+            document.getElementById("flashcard").classList.remove("correct");
+            const selectedTime = parseInt(document.getElementById("timerSelect").value);
+            timer = setTimeout(() => {
+                document.getElementById("flashcard").innerText = '';
+            }, selectedTime);
+        }
+
+        function getNextWord() {
+            if (retryQueue.length > 0) {
+                return retryQueue.shift();
+            }
+            if (deferredQueue.length > 0 && deferredQueue[0].deferUntil <= currentIndex) {
+                return deferredQueue.shift().word;
+            }
+            return words[currentIndex++ % words.length];
+        }
+
+        function evaluateExpression(expr) {
+            try {
+                return eval(expr.replace("x", "*").replace("÷", "/"));
+            } catch {
+                return null;
+            }
+        }
+
+        function checkAnswer() {
+            const input = document.getElementById("inputBox").value.trim().toLowerCase();
+            const correct = document.getElementById("flashcard").innerText.toLowerCase();
+            const feedback = document.getElementById("feedback");
+
+            let correctAnswer = correct;
+            if (document.getElementById("categorySelect").value === "math") {
+                correctAnswer = evaluateExpression(correct).toString();
+            }
+
+            if (input === correctAnswer) {
+                score += 10;
+                feedback.innerText = "Good job! You got it right!";
+                document.getElementById("flashcard").classList.add("correct");
+                document.getElementById("correctSound").play();
+            } else {
+                feedback.innerText = "Keep working! You'll get it!";
+                if (!retries[correct]) {
+                    retries[correct] = 1;
+                    retryQueue.push(correct);
+                } else if (retries[correct] === 1) {
+                    retries[correct]++;
+                    deferredQueue.push({ word: correct, deferUntil: currentIndex + 5 });
+                }
+            }
+
+            document.getElementById("score").innerText = "Points: " + score;
+            document.getElementById("inputBox").value = '';
+            checkRewards();
+            showFlashcard();
+        }
+
+        function checkEnter(event) {
+            if (event.key === "Enter") {
+                checkAnswer();
+            }
+        }
+
+        function checkRewards() {
+            if (score >= 100) document.getElementById("reward1Status").innerText = "Unlocked!";
+            if (score >= 200) document.getElementById("reward2Status").innerText = "Unlocked!";
+            if (score >= 5000) document.getElementById("reward3Status").innerText = "Unlocked!";
+            if (score >= 750) document.getElementById("reward4Status").innerText = "Unlocked!";
+            if (score >= 1000) document.getElementById("reward5Status").innerText = "Unlocked!";
+        }
+
+        resetCategory();
+    </script>
+</body>
+</html>
