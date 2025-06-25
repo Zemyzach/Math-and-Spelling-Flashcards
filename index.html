@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Emilia's Flashcards</title>
+  <style>
+    body {
+      font-family: 'Comic Sans MS', cursive;
+      background: #f9f9f9;
+      text-align: center;
+      padding: 20px;
+    }
+
+    #app {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      max-width: 400px;
+      margin: auto;
+      box-shadow: 0 0 12px rgba(0,0,0,0.1);
+    }
+
+    input, select, button {
+      margin: 10px;
+      padding: 10px;
+      font-size: 1em;
+      border-radius: 8px;
+    }
+
+    button {
+      background-color: #8bc34a;
+      color: white;
+      border: none;
+    }
+
+    button:hover {
+      background-color: #689f38;
+    }
+
+    #feedback {
+      font-weight: bold;
+      font-size: 1.2em;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <h1>Emilia's Math and Spelling Flashcards</h1>
+    
+    <div id="category-select">
+      <label>Choose a category:</label>
+      <select id="category">
+        <option value="spelling-en">Spelling (English)</option>
+        <option value="spelling-es">Spelling (Spanish)</option>
+        <option value="math-add">Math (Addition)</option>
+        <option value="math-sub">Math (Subtraction)</option>
+        <option value="math-mul">Math (Multiplication)</option>
+      </select>
+      <button onclick="startGame()">Start</button>
+    </div>
+
+    <div id="flashcard" style="display:none;">
+      <h2 id="question"></h2>
+      <input type="text" id="answerInput" placeholder="Type your answer" />
+      <button onclick="checkAnswer()">Submit</button>
+      <p id="feedback"></p>
+      <p>Points: <span id="points">0</span></p>
+    </div>
+  </div>
+
+  <script>
+    let questions = {
+      'spelling-en': [
+        { q: "Spell 'beautiful'", a: "beautiful" },
+        { q: "Spell 'adventure'", a: "adventure" },
+        { q: "Spell 'sunshine'", a: "sunshine" }
+      ],
+      'spelling-es': [
+        { q: "Spell 'beautiful' in Spanish", a: "hermosa" },
+        { q: "Spell 'dog' in Spanish", a: "perro" },
+        { q: "Spell 'sun' in Spanish", a: "sol" }
+      ],
+      'math-add': [],
+      'math-sub': [],
+      'math-mul': []
+    };
+
+    for (let i = 1; i <= 12; i++) {
+      for (let j = 1; j <= 12; j++) {
+        questions['math-add'].push({ q: `${i} + ${j}`, a: (i + j).toString() });
+        questions['math-sub'].push({ q: `${i + j} - ${i}`, a: j.toString() });
+        questions['math-mul'].push({ q: `${i} × ${j}`, a: (i * j).toString() });
+      }
+    }
+
+    let currentQuestion = null;
+    let score = 0;
+
+    function startGame() {
+      let category = document.getElementById("category").value;
+      currentQuestion = questions[category][Math.floor(Math.random() * questions[category].length)];
+      document.getElementById("question").innerText = currentQuestion.q;
+      document.getElementById("flashcard").style.display = "block";
+      document.getElementById("feedback").innerText = "";
+      document.getElementById("answerInput").value = "";
+    }
+
+    function checkAnswer() {
+      let input = document.getElementById("answerInput").value.trim().toLowerCase();
+      if (input === currentQuestion.a.toLowerCase()) {
+        document.getElementById("feedback").innerText = "✅ Correct!";
+        score += 100;
+        playCorrectSound();
+      } else {
+        document.getElementById("feedback").innerText = `❌ Oops! The answer was: ${currentQuestion.a}`;
+      }
+      document.getElementById("points").innerText = score;
+      setTimeout(startGame, 1500);
+    }
+
+    function playCorrectSound() {
+      let audio = new Audio("https://cdn.pixabay.com/download/audio/2022/03/15/audio_9a3f26346a.mp3?filename=success-fanfare-trumpets-6185.mp3");
+      audio.play();
+    }
+  </script>
+</body>
+</html>
