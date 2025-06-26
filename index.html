@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Emilia's Flashcards</title>
   <style>
     body {
@@ -11,58 +11,80 @@
       text-align: center;
       padding: 20px;
     }
-
     #app {
       background: #fff;
       border-radius: 12px;
       padding: 20px;
-      max-width: 400px;
+      max-width: 450px;
       margin: auto;
       box-shadow: 0 0 12px rgba(0,0,0,0.1);
     }
-
     input, select, button {
       margin: 10px;
       padding: 10px;
       font-size: 1em;
       border-radius: 8px;
     }
-
     button {
       background-color: #8bc34a;
       color: white;
       border: none;
     }
-
     button:hover {
       background-color: #689f38;
     }
-
     #feedback {
       font-weight: bold;
       font-size: 1.2em;
+    }
+    #question {
+      font-size: 1.5em;
+      min-height: 2em;
     }
   </style>
 </head>
 <body>
   <div id="app">
     <h1>Emilia's Math and Spelling Flashcards</h1>
-    
     <div id="category-select">
       <label>Choose a category:</label>
       <select id="category">
-        <option value="spelling-en">Spelling (English)</option>
-        <option value="spelling-es">Spelling (Spanish)</option>
-        <option value="math-add">Math (Addition)</option>
-        <option value="math-sub">Math (Subtraction)</option>
-        <option value="math-mul">Math (Multiplication)</option>
+        <optgroup label="Spelling">
+          <option value="spelling-2">2nd Grade Spelling</option>
+          <option value="spelling-3">3rd Grade Spelling</option>
+          <option value="spelling-4">4th Grade Spelling</option>
+          <option value="spelling-5">5th Grade Spelling</option>
+          <option value="spelling-6">6th Grade Spelling</option>
+          <option value="spelling-7">7th Grade Spelling</option>
+          <option value="spelling-8">8th Grade Spelling</option>
+          <option value="spelling-9">9th Grade Spelling</option>
+          <option value="spelling-10">10th Grade Spelling</option>
+          <option value="spelling-11">11th Grade Spelling</option>
+          <option value="spelling-12">12th Grade Spelling</option>
+        </optgroup>
+        <optgroup label="Math - Addition">
+          <option value="math-add-1">Single Digit Addition</option>
+          <option value="math-add-2">Double Digit Addition</option>
+          <option value="math-add-3">Triple Digit Addition</option>
+        </optgroup>
+        <optgroup label="Math - Subtraction">
+          <option value="math-sub-1">Single Digit Subtraction</option>
+          <option value="math-sub-2">Double Digit Subtraction</option>
+          <option value="math-sub-3">Triple Digit Subtraction</option>
+        </optgroup>
+        <optgroup label="Math - Multiplication">
+          <option value="math-mul-1">Single Digit Multiplication</option>
+          <option value="math-mul-2">Double Digit Multiplication</option>
+          <option value="math-mul-3">Triple Digit Multiplication</option>
+        </optgroup>
+        <option value="challenge">Challenge (Multi-step Add/Sub)</option>
       </select>
       <button onclick="startGame()">Start</button>
     </div>
 
     <div id="flashcard" style="display:none;">
       <h2 id="question"></h2>
-      <input type="text" id="answerInput" placeholder="Type your answer" />
+      <input type="text" id="answerInput" placeholder="Type your answer" autocomplete="off" />
       <button onclick="checkAnswer()">Submit</button>
       <p id="feedback"></p>
       <p>Points: <span id="points">0</span></p>
@@ -70,59 +92,135 @@
   </div>
 
   <script>
-    let questions = {
-      'spelling-en': [
-        { q: "Spell 'beautiful'", a: "beautiful" },
-        { q: "Spell 'adventure'", a: "adventure" },
-        { q: "Spell 'sunshine'", a: "sunshine" }
-      ],
-      'spelling-es': [
-        { q: "Spell 'beautiful' in Spanish", a: "hermosa" },
-        { q: "Spell 'dog' in Spanish", a: "perro" },
-        { q: "Spell 'sun' in Spanish", a: "sol" }
-      ],
-      'math-add': [],
-      'math-sub': [],
-      'math-mul': []
+    // Spelling words by grade (example words for demo)
+    const spellingWords = {
+      'spelling-2': ['cat', 'dog', 'book', 'tree', 'fish'],
+      'spelling-3': ['beautiful', 'adventure', 'sunshine', 'window', 'garden'],
+      'spelling-4': ['mountain', 'elephant', 'bicycle', 'favorite', 'library'],
+      'spelling-5': ['important', 'journey', 'calendar', 'language', 'neighbor'],
+      'spelling-6': ['mysterious', 'valuable', 'argument', 'population', 'practice'],
+      'spelling-7': ['persuade', 'necessary', 'environment', 'independent', 'particular'],
+      'spelling-8': ['benevolent', 'consequence', 'exaggerate', 'gregarious', 'hypothesis'],
+      'spelling-9': ['ambiguous', 'benevolent', 'conscientious', 'discrepancy', 'indigenous'],
+      'spelling-10': ['anachronistic', 'capricious', 'dichotomy', 'ephemeral', 'fastidious'],
+      'spelling-11': ['obfuscate', 'quintessential', 'recalcitrant', 'sagacious', 'vicissitude'],
+      'spelling-12': ['antidisestablishmentarianism', 'circumlocution', 'inconsequential', 'perspicacious', 'sesquipedalian']
     };
 
-    for (let i = 1; i <= 12; i++) {
-      for (let j = 1; j <= 12; j++) {
-        questions['math-add'].push({ q: `${i} + ${j}`, a: (i + j).toString() });
-        questions['math-sub'].push({ q: `${i + j} - ${i}`, a: j.toString() });
-        questions['math-mul'].push({ q: `${i} × ${j}`, a: (i * j).toString() });
+    // Challenge multi-step problems example
+    function generateChallenge() {
+      let a = Math.floor(Math.random() * 20) + 1;
+      let b = Math.floor(Math.random() * 20) + 1;
+      let c = Math.floor(Math.random() * 10) + 1;
+      let question = `${a} + ${b} - ${c}`;
+      let answer = a + b - c;
+      return { q: question, a: answer.toString() };
+    }
+
+    // Math generators for different difficulty levels
+    function generateMathQuestion(type, digits) {
+      const max = Math.pow(10, digits) - 1;
+      const min = Math.pow(10, digits - 1);
+      let num1, num2, q, a;
+
+      if (type === 'add') {
+        num1 = digits === 1 ? Math.floor(Math.random() * 9) + 1 : Math.floor(Math.random() * (max - min + 1)) + min;
+        num2 = digits === 1 ? Math.floor(Math.random() * 9) + 1 : Math.floor(Math.random() * (max - min + 1)) + min;
+        q = `${num1} + ${num2}`;
+        a = num1 + num2;
+      } else if (type === 'sub') {
+        num1 = digits === 1 ? Math.floor(Math.random() * 9) + 1 : Math.floor(Math.random() * (max - min + 1)) + min;
+        num2 = digits === 1 ? Math.floor(Math.random() * num1) + 1 : Math.floor(Math.random() * (num1 - min + 1)) + min;
+        q = `${num1} - ${num2}`;
+        a = num1 - num2;
+      } else if (type === 'mul') {
+        num1 = digits === 1 ? Math.floor(Math.random() * 9) + 1 : Math.floor(Math.random() * (max - min + 1)) + min;
+        num2 = digits === 1 ? Math.floor(Math.random() * 9) + 1 : Math.floor(Math.random() * (max - min + 1)) + min;
+        q = `${num1} × ${num2}`;
+        a = num1 * num2;
       }
+
+      return { q, a: a.toString() };
     }
 
     let currentQuestion = null;
     let score = 0;
+    let hideTimeout = null;
 
     function startGame() {
-      let category = document.getElementById("category").value;
-      currentQuestion = questions[category][Math.floor(Math.random() * questions[category].length)];
-      document.getElementById("question").innerText = currentQuestion.q;
-      document.getElementById("flashcard").style.display = "block";
-      document.getElementById("feedback").innerText = "";
-      document.getElementById("answerInput").value = "";
+      score = 0;
+      document.getElementById('points').innerText = score;
+      const category = document.getElementById('category').value;
+      document.getElementById('category-select').style.display = 'none';
+      document.getElementById('flashcard').style.display = 'block';
+
+      nextQuestion(category);
+    }
+
+    function nextQuestion(category) {
+      clearTimeout(hideTimeout);
+      document.getElementById('feedback').innerText = '';
+      const answerInput = document.getElementById('answerInput');
+      answerInput.value = '';
+      answerInput.focus();
+
+      if (category.startsWith('spelling')) {
+        const words = spellingWords[category];
+        const word = words[Math.floor(Math.random() * words.length)];
+        currentQuestion = { q: word, a: word.toLowerCase() };
+        document.getElementById('question').innerText = word;
+
+        // Hide word after 4 seconds
+        hideTimeout = setTimeout(() => {
+          document.getElementById('question').innerText = '???';
+        }, 4000);
+
+      } else if (category === 'challenge') {
+        currentQuestion = generateChallenge();
+        document.getElementById('question').innerText = currentQuestion.q;
+
+      } else {
+        const parts = category.split('-');
+        const mathType = parts[1];
+        const digits = parseInt(parts[2], 10);
+
+        currentQuestion = generateMathQuestion(mathType, digits);
+        document.getElementById('question').innerText = currentQuestion.q;
+      }
     }
 
     function checkAnswer() {
-      let input = document.getElementById("answerInput").value.trim().toLowerCase();
-      if (input === currentQuestion.a.toLowerCase()) {
-        document.getElementById("feedback").innerText = "✅ Correct!";
+      clearTimeout(hideTimeout);
+      const userAnswer = document.getElementById('answerInput').value.trim().toLowerCase();
+
+      if (userAnswer === currentQuestion.a.toLowerCase()) {
+        document.getElementById('feedback').innerText = '✅ Correct!';
         score += 100;
         playCorrectSound();
       } else {
-        document.getElementById("feedback").innerText = `❌ Oops! The answer was: ${currentQuestion.a}`;
+        document.getElementById('feedback').innerText = `❌ Oops! The answer was: ${currentQuestion.a}`;
       }
-      document.getElementById("points").innerText = score;
-      setTimeout(startGame, 1500);
+
+      document.getElementById('points').innerText = score;
+
+      setTimeout(() => {
+        const category = document.getElementById('category').value;
+        nextQuestion(category);
+      }, 1500);
     }
 
     function playCorrectSound() {
-      let audio = new Audio("https://cdn.pixabay.com/download/audio/2022/03/15/audio_9a3f26346a.mp3?filename=success-fanfare-trumpets-6185.mp3");
+      const audio = new Audio('https://cdn.pixabay.com/download/audio/2022/03/15/audio_9a3f26346a.mp3?filename=success-fanfare-trumpets-6185.mp3');
       audio.play();
     }
+
+    // Add Enter key support to submit answer
+    document.getElementById('answerInput').addEventListener('keydown', function(event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        checkAnswer();
+      }
+    });
   </script>
 </body>
 </html>
